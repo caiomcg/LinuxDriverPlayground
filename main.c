@@ -1,26 +1,12 @@
 #include <linux/init.h>   // Driver initialization methods
 #include <linux/module.h> // Module macros, structures and functions
-#include <linux/types.h>  // Types such as dev_t
-#include <linux/cdev.h>   // Prepare the character device
-#include <linux/fs.h>	  // File system utilities
 #include <linux/kdev_t.h> // Major and minor number information
 
-#include "defines.h" // General macros
+#include "constants.h" // General macros
 #include "fops/ldp_fops.h" // Custom file operations
 
 #define MINOR_VERSION_START 0
 #define MINOR_VERSION_AMOUNT 1
-
-// License, author and description
-MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("Caio Marcelo Campoy Guedes <caiomcg@gmail.com>");
-MODULE_DESCRIPTION("Test driver, use for learning purpose only");
-
-struct linux_driver_playground {
-	struct semaphore* sem;
-    struct cdev* my_cdev;
-	dev_t dev_num;
-} ldp;
 
 void cleanup(struct linux_driver_playground* pldp) {
 	unregister_chrdev_region(pldp->dev_num, MINOR_VERSION_AMOUNT);
@@ -28,10 +14,6 @@ void cleanup(struct linux_driver_playground* pldp) {
 	if (pldp->my_cdev != NULL) {
 		cdev_del(pldp->my_cdev);
 	}
-
-	// if (pldp->sem != NULL) {
-	// 	(void)
-	// }
 }
 
 static int __init ldp_init(void) {
@@ -62,7 +44,9 @@ static int __init ldp_init(void) {
 
 	printk(KERN_INFO "%s: is open with major number %d\n", MODULE_NAME, MAJOR(ldp.dev_num));
 
-	return 0;
+	status_code = usb_register(&ldp_usb_driver);
+	if (status_code) printk(KERN_ALERT "%s: usb_register failed. Error number %d\n", MODULE_NAME, status_code);
+	return status_code;
 
 fail:
 	cleanup(&ldp);
@@ -72,8 +56,15 @@ fail:
 
 static void __exit ldp_exit(void) {
     printk(KERN_INFO "%s: Unloaded\n", MODULE_NAME);
+	/* deregister this driver with the USB subsystem */
+	usb_deregister(&ldp_usb_driver);
 	cleanup(&ldp);
 }
 
 module_init(ldp_init);
 module_exit(ldp_exit);
+
+// License, author and description
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Caio Marcelo Campoy Guedes <caiomcg@gmail.com>");
+MODULE_DESCRIPTION("Test driver, use for learning purpose only");
