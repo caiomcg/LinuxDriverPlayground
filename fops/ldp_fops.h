@@ -17,6 +17,7 @@ void cmedia_diconnect(struct usb_interface* intf);
 struct linux_driver_playground {
 	struct semaphore sem;
     struct cdev* my_cdev;
+	struct usb_device* usb_dev;
 	dev_t dev_num;
 };
 

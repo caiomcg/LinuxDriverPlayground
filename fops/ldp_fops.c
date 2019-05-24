@@ -8,6 +8,7 @@
 struct linux_driver_playground ldp = {
 	.my_cdev = NULL,
 	.dev_num = 0,
+	.usb_dev = NULL,
 };
 
 /* table of devices that work with this driver */
@@ -109,7 +110,40 @@ long cmedia_ioctl(struct file *filp, unsigned int cmd, unsigned long arg) {
 }
 
 int cmedia_probe(struct usb_interface *intf, const struct usb_device_id *id) {
+	struct usb_host_interface *iface_desc = NULL;
+    struct usb_endpoint_descriptor *endpoint = NULL;
+    int i = 0;
+
 	printk(KERN_INFO "%s: May have a valid card [NOT IMPLEMENTED]", MODULE_NAME);
+
+    iface_desc = intf->cur_altsetting;
+    printk(KERN_INFO "%s: Pen i/f %d now probed: (%04X:%04X)\n",
+			MODULE_NAME,
+            iface_desc->desc.bInterfaceNumber,
+            id->idVendor, id->idProduct);
+    printk(KERN_INFO "%s: ID->bNumEndpoints: %02X\n",
+			MODULE_NAME,
+            iface_desc->desc.bNumEndpoints);
+    printk(KERN_INFO "%s: ID->bInterfaceClass: %02X\n",
+			MODULE_NAME,
+            iface_desc->desc.bInterfaceClass);
+
+    for (i = 0; i < iface_desc->desc.bNumEndpoints; i++) {
+        endpoint = &iface_desc->endpoint[i].desc;
+
+        printk(KERN_INFO "%s: ED[%d]->bEndpointAddress: 0x%02X\n",
+				MODULE_NAME,
+                i, endpoint->bEndpointAddress);
+        printk(KERN_INFO "%s: ED[%d]->bmAttributes: 0x%02X\n",
+				MODULE_NAME,
+                i, endpoint->bmAttributes);
+        printk(KERN_INFO "%s: ED[%d]->wMaxPacketSize: 0x%04X (%d)\n",
+				MODULE_NAME,
+                i, endpoint->wMaxPacketSize,
+                endpoint->wMaxPacketSize);
+    }
+
+    ldp.usb_dev = interface_to_usbdev(intf);
 	return 0;
 }
 void cmedia_diconnect(struct usb_interface *intf) {
